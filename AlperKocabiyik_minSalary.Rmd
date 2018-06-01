@@ -1,0 +1,125 @@
+---
+title: "Homework 3: Real Minimum Wages"
+author: "Alper Kocabiyik"
+date: "June 1st 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r, include=F}
+library(ggplot2)	
+library(reshape2)	
+library(dplyr)
+library(knitr)
+library(ggthemes)
+library(xkcd)
+library(ggrepel)	
+```
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(warning=F)
+```
+
+```{r, include=FALSE}
+#Load Data
+data<-read.csv("RMW_30052018211617983.csv",sep=",")
+summary(data)
+#We get Columns: Country, Time, Value with annual values
+data<-data[data$Pay.period == 'Annual',]
+data<-data[data$SERIES == "EXR",]
+data<-droplevels(data)
+data<-data[,c(2,7,15)]
+levels(data$SERIES)
+summary(data)
+```
+
+# Introduction
+
+# Questions
+
+## A) One variable plot: using the quantity you have selected show its distribution for all countries (all together and with facetting)
+
+```{r}
+gg <- ggplot(data, aes(x = Value,col=as.factor(TIME))) + labs(col="Years") +xlab("Minimum Wages")
+gg + geom_density()
+```
+```{r}
+gg <- ggplot(data, aes(x = Value,col=as.factor(TIME))) + labs(col="Years") + xlab("Minimum Wages")
+gg + geom_density(size=1) + facet_wrap(~as.factor(TIME))+ theme(legend.position="none")
+```
+
+
+
+## B) Two variable plot:
+
+### 1) Show the evolution of a quantity as a function of time for all countries
+
+```{r}
+#finding the countries with max and min average of salaries among 16 years to compare them
+minmean_cnt="Australia"
+maxmean_cnt="Australia"
+maxmean=mean(data$Value[data$Country=="Australia"])
+minmean=mean(data$Value[data$Country=="Australia"])
+for (cnt in data$Country){
+  if (mean(data$Value[data$Country==cnt])>maxmean){
+    maxmean=mean(data$Value[data$Country==cnt])
+    maxmean_cnt<-cnt
+  }
+  if (mean(data$Value[data$Country==cnt])<minmean){
+    minmean=mean(data$Value[data$Country==cnt])
+    minmean_cnt<-cnt
+  }
+}
+print(maxmean_cnt)
+print(minmean_cnt)
+data_min_max<-data[data$Country %in% c("Australia","Russian Federation"),]
+gg <- ggplot(data_min_max, aes(x = TIME,y=Value,col=as.factor(Country), )) + labs(col="Country")+ylab("Minimum Wages")
+gg + geom_line()
+
+```
+
+```{r}
+#10 different countries are chosen from different regions
+
+data_chosen <- data[data$Country %in% c("Australia","Luxembourg","Brazil","United States","France","Belgium", "Korea", "Israel","Turkey","Mexico"),]
+gg <- ggplot(data_chosen, aes(x = TIME,y=Value,col=as.factor(Country), )) + labs(col="Country")+ylab("Minimum Wages")
+gg +  geom_line() + ggtitle("Minimum Wages & Years for Countries")
+```
+
+### 2) Overlay a smoothing average.
+
+```{r}
+gg <- ggplot(data_chosen, aes(x = TIME,y=Value,col=as.factor(Country), )) + labs(col="Country") + ylab("Minimum Wages")
+gg +  geom_point() + geom_smooth(method = 'loess')
+```
+
+### 3) Use facetting to show the same visualization per country
+
+```{r}
+gg <- ggplot(data_chosen, aes(x = TIME,y=Value,col=as.factor(Country), )) + labs(col="Country") + ylab("Minimum Wages")
+gg +  geom_point() + geom_smooth(method = 'loess') +  facet_wrap(~as.factor(Country))
+  
+```
+
+## C) Gapminder bubble plot:
+
+```{r, include=FALSE}
+#Load Population
+population<-read.csv("POP_PROJ_31052018131635389.csv",sep=",")
+population<-population[,c(2,9,17)]
+population<-droplevels(population)
+summary(population)
+```
+
+```{r}
+data_joined <-  merge(data_chosen, population, by = c("Country","TIME"))
+colnames(data_joined) <- c("Country", "Time", "Salary", "Population")
+```
+
+```{r}
+ggplot(data_joined,aes(x = Country,y = Salary,size=Population,col=Country))+
+  geom_point()+ facet_wrap(~Time) + ylab("Minimum Wages") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
